@@ -1,9 +1,5 @@
 using LightGraphs
-using LinearAlgebra
-using StatsBase
-using GraphPlot
-using Optim
-using ReverseDiff
+using LinearAlgebra: UpperTriangular
 
 """
 UniDirectionalBeta
@@ -62,41 +58,3 @@ function sparse_beta_graph(beta::Vector, mu::Real; seed::Integer=-1)
     end
     return g
 end
-
-
-n = 500
-beta = zeros(n)
-for i in sample(collect(1:n), Int(floor(n / 10)))
-    beta[i] = sqrt(log(n))
-end
-mu = -log(n)
-
-g = sparse_beta_graph(beta, mu)
-
-layout = (args...) -> spring_layout(args...; C=9)
-gplot(g, layout=layout)
-
-# Parameter Estimation
-
-function sparse_beta_loglik(g::Graph, mu, beta)
-    mid = 0
-    for i in 1:n
-        mid += degree(g)[i] * beta[i]
-    end
-
-    final = 0
-    for i in 1:n
-        for j in i:n
-            final += log(1 + exp(mu + beta[i] + beta[j]))
-        end
-    end
-
-    return -(g.ne * mu) - mid + final
-end
-
-tape = ReverseDiff.GradientTape(mubeta -> sparse_beta_loglik(g, mubeta[1], mubeta[2:end]), vcat(-1.5, repeat([0], n)))
-(storage, params) -> ReverseDiff.gradient!(storage, tape, params)
-
-optimize(mubeta -> sparse_beta_loglik(g, mubeta[1], mubeta[2:end]), (storage, params) -> ReverseDiff.gradient!(storage, tape, params), vcat(-1.5, repeat([0], n)), LBFGS())
-
-# optimize(mubeta -> sparse_beta_loglik(g, mubeta[1], mubeta[2:end]), vcat(-1.5, repeat([0], n)))
