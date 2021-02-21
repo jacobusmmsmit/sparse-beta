@@ -1,15 +1,7 @@
 using LightGraphs
 using LinearAlgebra
 using StatsBase
-
-function erdos_renyi(n::Integer, p::Real; is_directed=false, seed::Integer=-1)
-    m = is_directed ? n * (n - 1) : div(n * (n - 1), 2)
-    ne = randbn(m, p, seed)
-    return is_directed ? SimpleDiGraph(n, ne, seed=seed) : SimpleGraph(n, ne, seed=seed)
-end
-
-G = erdos_renyi(100, .1)
-
+using GraphPlot
 
 """
 UniDirectionalBeta
@@ -54,7 +46,7 @@ UniDirectionalSparseBeta
 """
 function sparse_beta_graph(beta::Vector, mu::Real; seed::Integer=-1)
     @assert all(beta .>= 0) "beta must be non-negative"
-    @assert minimum(beta) == 0 "beta must contain at least one zero"
+    @assert 0 in beta "beta must contain at least one zero"
     n = length(beta)
     coefM = UpperTriangular(beta' .+ beta)
     g = SimpleGraph(n)
@@ -78,8 +70,6 @@ end
 mu = -log(n)
 
 g = sparse_beta_graph(beta, mu)
-
-using GraphPlot
 
 layout = (args...) -> spring_layout(args...; C=10)
 gplot(g, layout=layout)
