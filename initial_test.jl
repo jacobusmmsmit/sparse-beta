@@ -2,6 +2,8 @@ using LightGraphs
 using LinearAlgebra
 using StatsBase
 using GraphPlot
+using Optim
+using ReverseDiff
 
 """
 UniDirectionalBeta
@@ -71,7 +73,7 @@ mu = -log(n)
 
 g = sparse_beta_graph(beta, mu)
 
-layout = (args...) -> spring_layout(args...; C=10)
+layout = (args...) -> spring_layout(args...; C=9)
 gplot(g, layout=layout)
 
 # Parameter Estimation
@@ -91,3 +93,10 @@ function sparse_beta_loglik(g::Graph, mu, beta)
 
     return -(g.ne * mu) - mid + final
 end
+
+tape = ReverseDiff.GradientTape(mubeta -> sparse_beta_loglik(g, mubeta[1], mubeta[2:end]), vcat(-1.5, repeat([0], n)))
+(storage, params) -> ReverseDiff.gradient!(storage, tape, params)
+
+optimize(mubeta -> sparse_beta_loglik(g, mubeta[1], mubeta[2:end]), (storage, params) -> ReverseDiff.gradient!(storage, tape, params), vcat(-1.5, repeat([0], n)), LBFGS())
+
+# optimize(mubeta -> sparse_beta_loglik(g, mubeta[1], mubeta[2:end]), vcat(-1.5, repeat([0], n)))
