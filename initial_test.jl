@@ -73,3 +73,21 @@ g = sparse_beta_graph(beta, mu)
 
 layout = (args...) -> spring_layout(args...; C=10)
 gplot(g, layout=layout)
+
+# Parameter Estimation
+
+function sparse_beta_loglik(g::Graph, mu, beta)
+    mid = 0
+    for i in 1:n
+        mid += degree(g)[i] * beta[i]
+    end
+
+    final = 0
+    for i in 1:n
+        for j in i:n
+            final += log(1 + exp(mu + beta[i] + beta[j]))
+        end
+    end
+
+    return -(g.ne * mu) - mid + final
+end
